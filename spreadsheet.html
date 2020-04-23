@@ -1,0 +1,151 @@
+<html>
+<head>
+<title>spreadsheet</title>
+<style type="text/css">
+body {font-family:sans-serif;}
+table {border-collapse: collapse;}
+th, td {border: 1px solid black;}
+</style>
+<script type="text/javascript">
+var ME={};
+ME.Spreadsheet={};
+ME.Spreadsheet.Rows=40;
+ME.Spreadsheet.Columns=10;
+ME.Spreadsheet.Formulae={};
+ME.Spreadsheet.Results;
+ME.Spreadsheet.MaximumCalculationIterations=5;
+
+ME.Spreadsheet.Init=function(){
+	var iRow;
+	var iColumn;
+	var innerHtml;
+	var columnLetters = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"];
+
+	ME.Spreadsheet.SpreadsheetTable=document.getElementById("SpreadsheetTable");
+
+	innerHtml="<thead><tr><th id=\"SpreadsheetTableCorner\"></th>";
+	for(iColumn=0;iColumn<ME.Spreadsheet.Columns;iColumn++){
+		innerHtml = innerHtml + "<th class=\"SpreadsheetColumnHeader\" data-column=\""+columnLetters[iColumn]+"\">"+columnLetters[iColumn]+"</th>";
+	}
+	innerHtml=innerHtml+"<tbody>";
+	for(iRow=1;iRow<=ME.Spreadsheet.Rows;iRow++){
+		innerHtml=innerHtml+"<tr><th class=\"SpreadsheetRowHeader\" data-row=\""+iRow+"\">"+iRow+"</th>";
+		for(iColumn=0;iColumn<ME.Spreadsheet.Columns;iColumn++){
+			innerHtml = innerHtml + "<td class=\"SpreadsheetCell\" data-column=\""+columnLetters[iColumn]+"\" data-row=\""+iRow+"\"><input type=\"textbox\" data-ref=\""+columnLetters[iColumn]+iRow+"\" class=\"SpreadsheetCellData\" onclick=\"ME.Spreadsheet.DisplayFormula(this);\" onchange=\"ME.Spreadsheet.UpdateFormula(this);\" data-column=\""+columnLetters[iColumn]+"\" data-row=\""+iRow+"\" /></td>";
+		}
+		innerHtml=innerHtml+"</tr>";
+	}
+	innerHtml=innerHtml+"</tbody>";
+	ME.Spreadsheet.SpreadsheetTable.innerHTML = innerHtml;
+
+	ME.Spreadsheet.SpreadsheetTable=document.getElementById("calculateButton").onclick=ME.Spreadsheet.Calculate;
+};
+
+ME.Spreadsheet.DisplayFormula=function(cellData){
+	var formula=ME.Spreadsheet.Formulae[cellData.dataset.ref];
+	if(formula === undefined || formula === null) {
+		formula="";
+	}
+	cellData.value=formula;
+};
+
+ME.Spreadsheet.UpdateFormula=function(cellData){
+	ME.Spreadsheet.Formulae[cellData.dataset.ref]=cellData.value;
+};
+
+ME.Spreadsheet.Calculate=function(){
+	var i;
+	var column;
+	var row;
+	console.log("calculating");
+	ME.Spreadsheet.Results={};
+
+	for(i=0;Object.keys(ME.Spreadsheet.Results).length !== Object.keys(ME.Spreadsheet.Formulae).length && i<ME.Spreadsheet.MaximumCalculationIterations;i++){
+		Object.keys(ME.Spreadsheet.Formulae).forEach(function(key){
+			var formula;
+			var i;
+
+			if(ME.Spreadsheet.Results[key] === undefined){
+				if(ME.Spreadsheet.Formulae[key].substring(0, 1) !== "="){
+					ME.Spreadsheet.Results[key]=ME.Spreadsheet.Formulae[key]
+				}
+				else{
+					formula = ME.Spreadsheet.Formulae[key]
+
+					let parsed = "";
+					let part = "";
+
+					for(i=1; i<formula.length; i++){
+						if(formula[i]!==" "){
+							if (formula[i]==="+" || formula[i]==="-" || formula[i]==="*" || formula[i]==="/" || formula[i]==="%") {
+								if (i===formula.length-1){
+									parsed="Error";
+									break;
+								}
+								else if(!isNaN(part)){
+									parsed += part+formula[i];
+									part="";
+								}
+								else if (ME.Spreadsheet.Formulae[part] === undefined){
+									parsed="Error";
+									break;
+								}
+								else if (ME.Spreadsheet.Results[part] !== undefined){
+									parsed += ME.Spreadsheet.Results[part]+formula[i];
+									part="";
+								}
+								else {
+									parsed=undefined;
+									break;
+								}
+							}
+							else if(i===formula.length-1){
+								part = part + formula[i];
+
+								if(!isNaN(part)){
+									parsed += part;
+								}
+								if (ME.Spreadsheet.Formulae[part] === undefined){
+									ME.Spreadsheet.Results[key]="Error";
+									break;
+								}
+								else if (ME.Spreadsheet.Results[part] !== undefined){
+									parsed += ME.Spreadsheet.Results[part];
+								}
+								else{
+									parsed=undefined;
+									break;
+								}
+							}
+							else{
+								part = part + formula[i];
+							}
+						}
+					}
+
+					if(parsed==="Error" || parsed===""){
+						ME.Spreadsheet.Results[key] = "Error";
+					}
+					else if (parsed !== undefined && parsed !== ""){
+						ME.Spreadsheet.Results[key]=eval(parsed);
+					}
+
+					//ME.Spreadsheet.Results[key]="Error";
+				}
+				column=key.substring
+				document.querySelector("[data-ref=\""+key+"\"]").value=ME.Spreadsheet.Results[key]
+			}
+		});
+	}
+};
+
+window.addEventListener("DOMContentLoaded", () => {
+	ME.Spreadsheet.Init();
+});
+</script>
+</head>
+<body>
+<div id=header><input type="textbox" id="formula" /><input type="button" value="ok" /><input id="calculateButton" type="button" value="Calculate" /></div>
+<table id="SpreadsheetTable"></table>
+<body>
+</html>
